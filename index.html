@@ -284,7 +284,7 @@
         </div>
 
         <div class="field-row" id="custom-day-row" style="display:none;">
-          <input type="text" id="efir-day-custom" placeholder="Например: В пятницу" maxlength="30">
+          <input type="text" id="efir-day-custom" placeholder="Например: Вторник" maxlength="30">
         </div>
 
       </div>
@@ -440,7 +440,7 @@ async function renderEfir() {
   const dateVal = document.getElementById('efir-date').value;
   const timeVal = document.getElementById('efir-time').value || '19:00';
   const dayLabel = efirDay === 'custom'
-    ? (document.getElementById('efir-day-custom').value || 'В эту пятницу')
+    ? (document.getElementById('efir-day-custom').value || 'Вторник')
     : efirDay;
 
   // Дата в читаемый вид (с днём недели — как в воркфлоу)
