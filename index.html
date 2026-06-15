@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Banner Generator — DobroPost</title>
 <style>
-  /* Шрифт Inter загружается через FontFace API в JS */
-  /* Баннер-канвас: 1200×700 в 600×350 CSS */
-  #preview { width: 600px; height: 350px; }
+  #preview      { width: 600px; height: 350px; }
+  #efir-preview { width: 688px; height: 384px; }
+  #news-preview { width: 640px; height: 357px; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -106,10 +106,7 @@
     display: block;
   }
 
-  /* Эфир-канвас: 1376×768 в 688×384 CSS */
-  #efir-preview { width: 688px; height: 384px; }
-
-  .fields, .efir-fields {
+  .fields, .efir-fields, .news-fields {
     display: flex; flex-direction: column; gap: 10px;
     max-width: 640px; margin: 0 auto; width: 100%;
   }
@@ -132,6 +129,12 @@
   input:focus, textarea:focus { border-color: #ff9f43; }
   textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
+  input[type="range"] {
+    width: 100%;
+    accent-color: #ff9f43;
+    cursor: pointer;
+  }
+
   button {
     cursor: pointer; border: none; border-radius: 7px;
     font-size: 13px; font-weight: 600; padding: 9px 18px;
@@ -141,16 +144,13 @@
   button:active { transform: scale(0.97); }
   button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-  .btn-primary { background: #ff9f43; color: #0f1117; }
+  .btn-primary   { background: #ff9f43; color: #0f1117; }
   .btn-primary:hover:not(:disabled) { opacity: 0.85; }
-
   .btn-secondary { background: #1e2130; color: #e8eaf0; border: 1px solid #2a2f3e; }
   .btn-secondary:hover:not(:disabled) { background: #252a3a; }
-
-  .btn-ai { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
+  .btn-ai        { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
   .btn-ai:hover:not(:disabled) { opacity: 0.85; }
-
-  .btn-toggle { background: #1e2130; color: #6b7280; border: 1px solid #2a2f3e; }
+  .btn-toggle    { background: #1e2130; color: #6b7280; border: 1px solid #2a2f3e; }
   .btn-toggle.active { background: #2a3a5e; color: #60a5fa; border-color: #3b82f6; }
 
   .btn-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -161,8 +161,8 @@
     max-width: 640px; margin: 0 auto; width: 100%;
   }
   .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .ai-badge { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
-  .ai-title { font-size: 13px; font-weight: 600; color: #c4b5fd; }
+  .ai-badge  { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+  .ai-title  { font-size: 13px; font-weight: 600; color: #c4b5fd; }
   .ai-option { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #9ca3af; margin-bottom: 8px; cursor: pointer; }
   .ai-option input { width: auto; }
   #ai-status { font-size: 12px; color: #a78bfa; margin-top: 6px; min-height: 18px; }
@@ -173,11 +173,15 @@
   .efir-row .field-row { flex: 1; }
   .day-picker { display: flex; gap: 8px; }
   .day-btn { flex: 1; }
+  .tpl-picker { display: flex; gap: 8px; }
+  .tpl-btn { flex: 1; }
 
   .banner-page { display: flex; flex-direction: column; gap: 18px; width: 100%; }
   .banner-page.hidden { display: none; }
   .efir-page { display: none; flex-direction: column; gap: 18px; width: 100%; }
   .efir-page.visible { display: flex; }
+  .news-page { display: none; flex-direction: column; gap: 18px; width: 100%; }
+  .news-page.visible { display: flex; }
 
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner {
@@ -192,7 +196,7 @@
     .sidebar { flex-direction: row; overflow-x: auto; overflow-y: visible; border-right: none; border-bottom: 1px solid #1e2130; padding: 8px; height: 72px; }
     .sidebar-label { display: none; }
     .template-card { min-width: 90px; }
-    #efir-preview { width: 100%; height: auto; }
+    #efir-preview, #news-preview { width: 100%; height: auto; }
   }
 </style>
 </head>
@@ -201,8 +205,9 @@
 <header>
   <div class="logo">DobroPost Banners</div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('banner')">Баннер</button>
-    <button class="tab" onclick="switchTab('efir')">Прямой эфир</button>
+    <button class="tab active" data-tab="banner" onclick="switchTab('banner')">Баннер</button>
+    <button class="tab" data-tab="efir" onclick="switchTab('efir')">Прямой эфир</button>
+    <button class="tab" data-tab="news" onclick="switchTab('news')">Новости</button>
   </div>
 </header>
 
@@ -228,6 +233,10 @@
         <div class="field-row">
           <div class="field-label">Подзаголовок</div>
           <input type="text" id="subtitle" placeholder="Например: Лучшие товары со скидкой" maxlength="120">
+        </div>
+        <div class="field-row">
+          <div class="field-label">Размер заголовка: <span id="font-size-val">36</span>px</div>
+          <input type="range" id="font-size" min="18" max="60" value="36" step="1">
         </div>
       </div>
 
@@ -259,11 +268,18 @@
     <div class="efir-page" id="efir-page">
 
       <div class="canvas-wrap">
-        <!-- Канвас 2x: 1376×768 пикселей, отображается как 688×384 -->
         <canvas id="efir-preview" width="1376" height="768"></canvas>
       </div>
 
       <div class="efir-fields">
+
+        <div class="field-row">
+          <div class="field-label">Шаблон</div>
+          <div class="tpl-picker">
+            <button class="btn-toggle tpl-btn active" id="efir-tpl-1" onclick="setEfirTemplate(1)">Версия 1</button>
+            <button class="btn-toggle tpl-btn"        id="efir-tpl-2" onclick="setEfirTemplate(2)">Версия 2</button>
+          </div>
+        </div>
 
         <div class="efir-row">
           <div class="field-row">
@@ -297,10 +313,40 @@
 
     </div>
 
+    <!-- ══ НОВОСТИ ══ -->
+    <div class="news-page" id="news-page">
+
+      <div class="canvas-wrap">
+        <canvas id="news-preview" width="1280" height="714"></canvas>
+      </div>
+
+      <div class="news-fields">
+        <div class="field-row">
+          <div class="field-label">Заголовок</div>
+          <input type="text" id="news-title" placeholder="Например: Новое обновление приложения" maxlength="80">
+        </div>
+        <div class="field-row">
+          <div class="field-label">Подзаголовок</div>
+          <input type="text" id="news-subtitle" placeholder="Краткий текст новости" maxlength="120">
+        </div>
+        <div class="btn-row">
+          <button class="btn-toggle" id="hl-btn" onclick="toggleHighlight()" style="min-width:200px;">
+            Жёлтая подсветка: выкл
+          </button>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" onclick="downloadCanvas('news-preview', 'news')">⬇ Скачать PNG</button>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
 <script>
+// ── Конфиги баннерных шаблонов ────────────────────────────────────
 const TEMPLATE_CONFIG = {
   'nahodki-1':        { textColor: '#1C2B3A' },
   'nahodki-2':        { textColor: '#1C2B3A' },
@@ -334,14 +380,28 @@ const TEMPLATE_LABELS = {
   'novinka-1':'Новинка','polezno-1':'Полезно','akciya-1':'Акция 1','akciya-2':'Акция 2','akciya-3':'Акция 3','stil-1':'Стиль',
 };
 
+// ── Конфиги шаблонов "Новости" ────────────────────────────────────
+// textX, maxW, areaTop, areaBot — в координатах 1280×714
+const NEWS_TEMPLATE_CONFIG = {
+  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 255, areaBot: 655 },
+  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 55,  areaBot: 645 },
+  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 135, areaBot: 645 },
+  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 255, areaBot: 655 },
+};
+
 const RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 
-let selectedTemplate = 'nahodki-1';
-let efirDay = 'Сегодня';
-let currentTab = 'banner';
-const imgCache = {};
-let interReady = false;
+// ── Состояние ─────────────────────────────────────────────────────
+let selectedTemplate     = 'nahodki-1';
+let selectedNewsTemplate = 'news-white-center';
+let newsHighlightEnabled = false;
+let efirTemplate         = 1;
+let efirDay              = 'Сегодня';
+let currentTab           = 'banner';
+const imgCache           = {};
+let interReady           = false;
 
+// ── Inter Font (для эфира) ────────────────────────────────────────
 async function loadInterFont() {
   if (interReady) return;
   try {
@@ -384,13 +444,14 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ── Рендер баннера (2x: 1200×700, отображается 600×350) ──────────
+// ── Рендер обычного баннера (2x: 1200×700 → CSS 600×350) ─────────
 async function render() {
-  const canvas = document.getElementById('preview');
-  const ctx = canvas.getContext('2d');
-  const S = 2; // масштаб 2x
+  const canvas   = document.getElementById('preview');
+  const ctx      = canvas.getContext('2d');
+  const S        = 2;
   const title    = document.getElementById('title').value;
   const subtitle = document.getElementById('subtitle').value;
+  const fontSize = parseInt(document.getElementById('font-size').value) || 36;
 
   ctx.clearRect(0, 0, 1200, 700);
 
@@ -405,16 +466,15 @@ async function render() {
   if (!title && !subtitle) return;
 
   ctx.textBaseline = 'top';
-  ctx.fillStyle = '#ffffff'; // всегда белый
+  ctx.fillStyle    = '#ffffff';
 
-  const TITLE_LINE_H = 42 * S;
+  const TITLE_LINE_H = (fontSize + 6) * S;
   const SUB_LINE_H   = 24 * S;
   const GAP          = 14 * S;
   const LEFT         = 32 * S;
   const MAX_W        = 270 * S;
 
-  // Считаем высоту блока для вертикального центрирования
-  ctx.font = `bold ${36 * S}px Arial, Helvetica, sans-serif`;
+  ctx.font = `bold ${fontSize * S}px Arial, Helvetica, sans-serif`;
   const titleLines = wrapText(ctx, title, MAX_W);
   ctx.font = `${16 * S}px Arial, Helvetica, sans-serif`;
   const subLines   = subtitle ? wrapText(ctx, subtitle, MAX_W) : [];
@@ -423,11 +483,10 @@ async function render() {
   const subH   = subLines.length ? GAP + subLines.length * SUB_LINE_H : 0;
   const totalH = titleH + subH;
 
-  // Зона: от 65px до 310px (в CSS px → ×S)
   const AREA_TOP = 65 * S, AREA_BOT = 310 * S;
   let y = Math.max(AREA_TOP, Math.round((AREA_TOP + AREA_BOT - totalH) / 2));
 
-  ctx.font = `bold ${36 * S}px Arial, Helvetica, sans-serif`;
+  ctx.font = `bold ${fontSize * S}px Arial, Helvetica, sans-serif`;
   for (const line of titleLines) { ctx.fillText(line, LEFT, y); y += TITLE_LINE_H; }
 
   if (subLines.length) {
@@ -439,18 +498,18 @@ async function render() {
   }
 }
 
-// ── Рендер эфира (2x: 1376×768, отображается 688×384) ────────────
+// ── Рендер эфира (2x: 1376×768 → CSS 688×384) ────────────────────
 async function renderEfir() {
   const canvas = document.getElementById('efir-preview');
-  const ctx = canvas.getContext('2d');
-  // Все координаты ×2 относительно оригинального HTML 688×384
-  const S = 2;
+  const ctx    = canvas.getContext('2d');
+  const S      = 2;
 
   ctx.clearRect(0, 0, 1376, 768);
 
   let hasBg = false;
   try {
-    const bg = await loadImg('/templates/efir-blank.png');
+    const bgFile = efirTemplate === 2 ? '/templates/efir-blank-2.png' : '/templates/efir-blank.png';
+    const bg = await loadImg(bgFile);
     ctx.drawImage(bg, 0, 0, 1376, 768);
     hasBg = true;
   } catch {
@@ -464,7 +523,6 @@ async function renderEfir() {
     ? (document.getElementById('efir-day-custom').value || 'Вторник')
     : efirDay;
 
-  // Дата в читаемый вид (с днём недели — как в воркфлоу)
   const RU_DAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
   let dateLabel = '';
   if (dateVal) {
@@ -473,14 +531,12 @@ async function renderEfir() {
     dateLabel = `${d} ${RU_MONTHS[m - 1]}, ${RU_DAYS[dt.getDay()]}`;
   }
 
-  // Явно загружаем Inter Black (оба файла — латиница и кириллица)
   await loadInterFont();
 
   const badgeTop  = (hasBg ? 95  : 75)  * S;
   const badgeLeft = 28 * S;
   const textTop   = (hasBg ? 130 : 110) * S;
   const fontSize  = (hasBg ? 46  : 44)  * S;
-
   const badgeH    = 28 * S;
   const badgePadX = 14 * S;
   const badgeGap  = 8  * S;
@@ -491,7 +547,7 @@ async function renderEfir() {
 
   function drawBadge(text, x, bgColor, borderColor, textColor) {
     const tw = ctx.measureText(text).width;
-    const w = tw + badgePadX * 2;
+    const w  = tw + badgePadX * 2;
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(x, badgeTop, w, badgeH, badgeR);
@@ -512,40 +568,125 @@ async function renderEfir() {
   }
   drawBadge(timeVal + ' МСК', bx, 'rgba(255,195,58,0.2)', 'rgba(255,195,58,0.5)', '#FFC33A');
 
-  // Основной текст
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle    = '#ffffff';
   ctx.textBaseline = 'top';
-  ctx.font = `900 ${fontSize}px Inter, 'Arial Black', Arial, sans-serif`;
+  ctx.font         = `900 ${fontSize}px Inter, 'Arial Black', Arial, sans-serif`;
 
   let ty = textTop;
-  for (const line of [`Еженедельный`, `прямой эфир`, `${dayLabel} в ${timeVal}`]) {
+  for (const line of ['Еженедельный', 'прямой эфир', `${dayLabel} в ${timeVal}`]) {
     ctx.fillText(line, 28 * S, ty);
     ty += Math.round(fontSize * 1.18);
   }
 }
 
-// ── Табы ──────────────────────────────────────────────────────────
+// ── Рендер новостей (1280×714 → CSS 640×357) ─────────────────────
+async function renderNews() {
+  const canvas   = document.getElementById('news-preview');
+  const ctx      = canvas.getContext('2d');
+  const title    = document.getElementById('news-title').value;
+  const subtitle = document.getElementById('news-subtitle').value;
+  const cfg      = NEWS_TEMPLATE_CONFIG[selectedNewsTemplate];
+
+  ctx.clearRect(0, 0, 1280, 714);
+
+  try {
+    const img = await loadImg('/templates/' + selectedNewsTemplate + '.jpg');
+    ctx.drawImage(img, 0, 0, 1280, 714);
+  } catch {
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, 1280, 714);
+  }
+
+  if (!title && !subtitle) return;
+
+  const TITLE_SIZE   = 54;
+  const SUB_SIZE     = 26;
+  const TITLE_LINE_H = 68;
+  const SUB_LINE_H   = 38;
+  const GAP          = 16;
+
+  ctx.textBaseline = 'top';
+
+  ctx.font = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
+  const titleLines = wrapText(ctx, title, cfg.maxW);
+  ctx.font = `${SUB_SIZE}px Arial, Helvetica, sans-serif`;
+  const subLines   = subtitle ? wrapText(ctx, subtitle, cfg.maxW) : [];
+
+  const titleH = titleLines.length * TITLE_LINE_H;
+  const subH   = subLines.length ? GAP + subLines.length * SUB_LINE_H : 0;
+  const totalH = titleH + subH;
+
+  let y = Math.max(cfg.areaTop, Math.round((cfg.areaTop + cfg.areaBot - totalH) / 2));
+
+  // Заголовок
+  ctx.fillStyle = cfg.textColor;
+  ctx.font      = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
+  for (const line of titleLines) {
+    ctx.fillText(line, cfg.textX, y);
+    y += TITLE_LINE_H;
+  }
+
+  // Подзаголовок (с опциональной жёлтой подсветкой)
+  if (subLines.length) {
+    y += GAP;
+    ctx.font = `${SUB_SIZE}px Arial, Helvetica, sans-serif`;
+    for (const line of subLines) {
+      if (newsHighlightEnabled) {
+        const tw = ctx.measureText(line).width;
+        ctx.save();
+        ctx.fillStyle = '#FFC33A';
+        ctx.beginPath();
+        ctx.roundRect(cfg.textX - 8, y - 4, tw + 16, SUB_LINE_H + 4, 5);
+        ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#1C2B3A';
+      } else {
+        ctx.fillStyle = cfg.textColor;
+      }
+      ctx.fillText(line, cfg.textX, y);
+      y += SUB_LINE_H;
+    }
+  }
+}
+
+// ── Переключение вкладок ──────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i === 0) === (tab === 'banner')));
-  document.getElementById('banner-page').classList.toggle('hidden', tab !== 'banner');
-  document.getElementById('efir-page').classList.toggle('visible', tab === 'efir');
-  document.getElementById('sidebar').style.visibility = tab === 'banner' ? 'visible' : 'hidden';
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('banner-page').classList.toggle('hidden',  tab !== 'banner');
+  document.getElementById('efir-page').classList.toggle('visible',   tab === 'efir');
+  document.getElementById('news-page').classList.toggle('visible',   tab === 'news');
+
+  const sidebar = document.getElementById('sidebar');
+  if (tab === 'efir') {
+    sidebar.style.visibility = 'hidden';
+  } else {
+    sidebar.style.visibility = 'visible';
+    buildSidebar(tab);
+  }
+
   if (tab === 'efir') renderEfir();
+  if (tab === 'news') renderNews();
 }
 
 // ── Сайдбар шаблонов ──────────────────────────────────────────────
-function buildSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  Object.keys(TEMPLATE_CONFIG).forEach(id => {
+function buildSidebar(tab) {
+  const sidebar    = document.getElementById('sidebar');
+  sidebar.innerHTML = '<div class="sidebar-label">Шаблоны</div>';
+  const isNews     = tab === 'news';
+  const templates  = isNews ? NEWS_TEMPLATE_CONFIG : TEMPLATE_CONFIG;
+  const getLabel   = id => isNews ? NEWS_TEMPLATE_CONFIG[id].label : (TEMPLATE_LABELS[id] || id);
+  const currentTpl = isNews ? selectedNewsTemplate : selectedTemplate;
+
+  Object.keys(templates).forEach(id => {
     const card = document.createElement('div');
-    card.className = 'template-card' + (id === selectedTemplate ? ' active' : '');
+    card.className = 'template-card' + (id === currentTpl ? ' active' : '');
     card.dataset.id = id;
-    card.innerHTML = `<img src="/templates/${id}.jpg" alt="${id}" loading="lazy"><span class="t-name">${TEMPLATE_LABELS[id] || id}</span>`;
+    card.innerHTML  = `<img src="/templates/${id}.jpg" alt="${id}" loading="lazy"><span class="t-name">${getLabel(id)}</span>`;
     card.addEventListener('click', () => {
-      selectedTemplate = id;
+      if (isNews) selectedNewsTemplate = id; else selectedTemplate = id;
       document.querySelectorAll('.template-card').forEach(c => c.classList.toggle('active', c.dataset.id === id));
-      render();
+      if (isNews) renderNews(); else render();
     });
     sidebar.appendChild(card);
   });
@@ -554,18 +695,35 @@ function buildSidebar() {
 // ── День эфира ────────────────────────────────────────────────────
 function setDay(val) {
   efirDay = val;
-  document.getElementById('day-today').classList.toggle('active', val === 'Сегодня');
+  document.getElementById('day-today').classList.toggle('active',    val === 'Сегодня');
   document.getElementById('day-tomorrow').classList.toggle('active', val === 'Завтра');
-  document.getElementById('day-custom').classList.toggle('active', val === 'custom');
+  document.getElementById('day-custom').classList.toggle('active',   val === 'custom');
   document.getElementById('custom-day-row').style.display = val === 'custom' ? 'block' : 'none';
   renderEfir();
 }
 
-// ── AI ────────────────────────────────────────────────────────────
+// ── Шаблон эфира (1 или 2) ────────────────────────────────────────
+function setEfirTemplate(n) {
+  efirTemplate = n;
+  document.getElementById('efir-tpl-1').classList.toggle('active', n === 1);
+  document.getElementById('efir-tpl-2').classList.toggle('active', n === 2);
+  renderEfir();
+}
+
+// ── Жёлтая подсветка (новости) ────────────────────────────────────
+function toggleHighlight() {
+  newsHighlightEnabled = !newsHighlightEnabled;
+  const btn = document.getElementById('hl-btn');
+  btn.classList.toggle('active', newsHighlightEnabled);
+  btn.textContent = `Жёлтая подсветка: ${newsHighlightEnabled ? 'вкл' : 'выкл'}`;
+  renderNews();
+}
+
+// ── AI (только для баннеров) ──────────────────────────────────────
 async function runAI() {
-  const btn = document.getElementById('ai-btn');
-  const status = document.getElementById('ai-status');
-  const letterText = document.getElementById('letter-text').value.trim();
+  const btn          = document.getElementById('ai-btn');
+  const status       = document.getElementById('ai-status');
+  const letterText   = document.getElementById('letter-text').value.trim();
   const pickTemplate = document.getElementById('ai-pick-template').checked;
 
   if (!letterText) { status.textContent = '⚠️ Вставьте текст письма'; return; }
@@ -602,31 +760,39 @@ async function runAI() {
   }
 }
 
-// ── Скачать ───────────────────────────────────────────────────────
+// ── Скачать PNG ───────────────────────────────────────────────────
 function downloadCanvas(canvasId, prefix) {
-  const canvas = document.getElementById(canvasId);
-  const name = (document.getElementById('title')?.value || prefix).slice(0, 40).replace(/[^\w\sа-яА-ЯёЁ]/g, '').trim() || prefix;
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = `${name}.png`;
+  const canvas  = document.getElementById(canvasId);
+  const titleId = canvasId === 'news-preview' ? 'news-title' : 'title';
+  const name    = (document.getElementById(titleId)?.value || prefix)
+    .slice(0, 40).replace(/[^\w\sа-яА-ЯёЁ]/g, '').trim() || prefix;
+  const a       = document.createElement('a');
+  a.href        = canvas.toDataURL('image/png');
+  a.download    = `${name}.png`;
   a.click();
 }
 
 // ── Инициализация ─────────────────────────────────────────────────
-(function() {
+(function () {
   const today = new Date();
-  const pad = n => String(n).padStart(2, '0');
+  const pad   = n => String(n).padStart(2, '0');
   document.getElementById('efir-date').value =
     `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 })();
 
 document.getElementById('title').addEventListener('input', render);
 document.getElementById('subtitle').addEventListener('input', render);
+document.getElementById('font-size').addEventListener('input', () => {
+  document.getElementById('font-size-val').textContent = document.getElementById('font-size').value;
+  render();
+});
 document.getElementById('efir-date').addEventListener('change', renderEfir);
 document.getElementById('efir-time').addEventListener('change', renderEfir);
 document.getElementById('efir-day-custom').addEventListener('input', renderEfir);
+document.getElementById('news-title').addEventListener('input', renderNews);
+document.getElementById('news-subtitle').addEventListener('input', renderNews);
 
-buildSidebar();
+buildSidebar('banner');
 render();
 </script>
 </body>
