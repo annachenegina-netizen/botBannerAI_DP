@@ -1,7 +1,9 @@
 {
   "name": "banner-tool",
   "version": "1.0.0",
-  "description": "DobroPost Banner Generator",
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.0"
   }
