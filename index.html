@@ -323,16 +323,15 @@
       <div class="news-fields">
         <div class="field-row">
           <div class="field-label">Заголовок</div>
-          <input type="text" id="news-title" placeholder="Например: Новое обновление приложения" maxlength="80">
+          <input type="text" id="news-title" placeholder="Например: ПВЗ Екатеринбург" maxlength="80">
         </div>
         <div class="field-row">
-          <div class="field-label">Подзаголовок</div>
-          <input type="text" id="news-subtitle" placeholder="Краткий текст новости" maxlength="120">
+          <div class="field-label">Текст</div>
+          <input type="text" id="news-body" placeholder="Дополнительный текст (опционально)" maxlength="120">
         </div>
-        <div class="btn-row">
-          <button class="btn-toggle" id="hl-btn" onclick="toggleHighlight()" style="min-width:200px;">
-            Жёлтая подсветка: выкл
-          </button>
+        <div class="field-row">
+          <div class="field-label">Жёлтый текст <span style="color:#555;font-weight:400;text-transform:none;letter-spacing:0;">— конкретные слова с подсветкой</span></div>
+          <input type="text" id="news-highlight" placeholder="Например: Не работает и что теперь?" maxlength="100">
         </div>
       </div>
 
@@ -382,11 +381,15 @@ const TEMPLATE_LABELS = {
 
 // ── Конфиги шаблонов "Новости" ────────────────────────────────────
 // textX, maxW, areaTop, areaBot — в координатах 1280×714
+// news-white-center: логотип по центру сверху, левая полоса (x<490) чистая — текст туда
+// news-dark-1: белая карточка без заголовка — вся высота доступна
+// news-dark-2: "DobroPost" label ~y=65-110, текст ниже
+// news-white-left: логотип слева y=50-240, текст ниже
 const NEWS_TEMPLATE_CONFIG = {
-  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 255, areaBot: 655 },
-  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 55,  areaBot: 645 },
+  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 460, areaTop: 70,  areaBot: 655 },
+  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 65,  areaBot: 645 },
   'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 135, areaBot: 645 },
-  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 255, areaBot: 655 },
+  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 258, areaBot: 655 },
 };
 
 const RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -394,7 +397,6 @@ const RU_MONTHS = ['января','февраля','марта','апреля','
 // ── Состояние ─────────────────────────────────────────────────────
 let selectedTemplate     = 'nahodki-1';
 let selectedNewsTemplate = 'news-white-center';
-let newsHighlightEnabled = false;
 let efirTemplate         = 1;
 let efirDay              = 'Сегодня';
 let currentTab           = 'banner';
@@ -581,11 +583,12 @@ async function renderEfir() {
 
 // ── Рендер новостей (1280×714 → CSS 640×357) ─────────────────────
 async function renderNews() {
-  const canvas   = document.getElementById('news-preview');
-  const ctx      = canvas.getContext('2d');
-  const title    = document.getElementById('news-title').value;
-  const subtitle = document.getElementById('news-subtitle').value;
-  const cfg      = NEWS_TEMPLATE_CONFIG[selectedNewsTemplate];
+  const canvas    = document.getElementById('news-preview');
+  const ctx       = canvas.getContext('2d');
+  const title     = document.getElementById('news-title').value.trim();
+  const body      = document.getElementById('news-body').value.trim();
+  const highlight = document.getElementById('news-highlight').value.trim();
+  const cfg       = NEWS_TEMPLATE_CONFIG[selectedNewsTemplate];
 
   ctx.clearRect(0, 0, 1280, 714);
 
@@ -597,54 +600,66 @@ async function renderNews() {
     ctx.fillRect(0, 0, 1280, 714);
   }
 
-  if (!title && !subtitle) return;
+  if (!title && !body && !highlight) return;
 
   const TITLE_SIZE   = 54;
-  const SUB_SIZE     = 26;
+  const BODY_SIZE    = 26;
+  const HL_SIZE      = 26;
   const TITLE_LINE_H = 68;
-  const SUB_LINE_H   = 38;
-  const GAP          = 16;
+  const BODY_LINE_H  = 38;
+  const HL_PAD_X     = 12;
+  const HL_PAD_Y     = 6;
+  const HL_LINE_H    = HL_SIZE + HL_PAD_Y * 2 + 6; // высота пилюли + зазор
+  const GAP          = 14;
 
   ctx.textBaseline = 'top';
 
   ctx.font = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
-  const titleLines = wrapText(ctx, title, cfg.maxW);
-  ctx.font = `${SUB_SIZE}px Arial, Helvetica, sans-serif`;
-  const subLines   = subtitle ? wrapText(ctx, subtitle, cfg.maxW) : [];
+  const titleLines = title     ? wrapText(ctx, title,     cfg.maxW) : [];
+  ctx.font = `${BODY_SIZE}px Arial, Helvetica, sans-serif`;
+  const bodyLines  = body      ? wrapText(ctx, body,      cfg.maxW) : [];
+  ctx.font = `600 ${HL_SIZE}px Arial, Helvetica, sans-serif`;
+  const hlLines    = highlight ? wrapText(ctx, highlight, cfg.maxW) : [];
 
-  const titleH = titleLines.length * TITLE_LINE_H;
-  const subH   = subLines.length ? GAP + subLines.length * SUB_LINE_H : 0;
-  const totalH = titleH + subH;
+  // Общая высота блока для вертикального центрирования
+  let totalH = titleLines.length * TITLE_LINE_H
+             + (bodyLines.length  ? GAP + bodyLines.length * BODY_LINE_H : 0)
+             + (hlLines.length    ? GAP + hlLines.length   * HL_LINE_H   : 0);
 
   let y = Math.max(cfg.areaTop, Math.round((cfg.areaTop + cfg.areaBot - totalH) / 2));
 
   // Заголовок
-  ctx.fillStyle = cfg.textColor;
-  ctx.font      = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
-  for (const line of titleLines) {
-    ctx.fillText(line, cfg.textX, y);
-    y += TITLE_LINE_H;
+  if (titleLines.length) {
+    ctx.fillStyle = cfg.textColor;
+    ctx.font      = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
+    for (const line of titleLines) { ctx.fillText(line, cfg.textX, y); y += TITLE_LINE_H; }
   }
 
-  // Подзаголовок (с опциональной жёлтой подсветкой)
-  if (subLines.length) {
-    y += GAP;
-    ctx.font = `${SUB_SIZE}px Arial, Helvetica, sans-serif`;
-    for (const line of subLines) {
-      if (newsHighlightEnabled) {
-        const tw = ctx.measureText(line).width;
-        ctx.save();
-        ctx.fillStyle = '#FFC33A';
-        ctx.beginPath();
-        ctx.roundRect(cfg.textX - 8, y - 4, tw + 16, SUB_LINE_H + 4, 5);
-        ctx.fill();
-        ctx.restore();
-        ctx.fillStyle = '#1C2B3A';
-      } else {
-        ctx.fillStyle = cfg.textColor;
-      }
+  // Основной текст
+  if (bodyLines.length) {
+    if (titleLines.length) y += GAP;
+    ctx.font = `${BODY_SIZE}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle   = cfg.textColor;
+    ctx.globalAlpha = 0.85;
+    for (const line of bodyLines) { ctx.fillText(line, cfg.textX, y); y += BODY_LINE_H; }
+    ctx.globalAlpha = 1;
+  }
+
+  // Жёлтый текст — каждая строка в жёлтой пилюле
+  if (hlLines.length) {
+    if (titleLines.length || bodyLines.length) y += GAP;
+    ctx.font = `600 ${HL_SIZE}px Arial, Helvetica, sans-serif`;
+    for (const line of hlLines) {
+      const tw = ctx.measureText(line).width;
+      ctx.save();
+      ctx.fillStyle = '#FFC33A';
+      ctx.beginPath();
+      ctx.roundRect(cfg.textX - HL_PAD_X, y - HL_PAD_Y, tw + HL_PAD_X * 2, HL_SIZE + HL_PAD_Y * 2, 6);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#1C2B3A';
       ctx.fillText(line, cfg.textX, y);
-      y += SUB_LINE_H;
+      y += HL_LINE_H;
     }
   }
 }
@@ -708,15 +723,6 @@ function setEfirTemplate(n) {
   document.getElementById('efir-tpl-1').classList.toggle('active', n === 1);
   document.getElementById('efir-tpl-2').classList.toggle('active', n === 2);
   renderEfir();
-}
-
-// ── Жёлтая подсветка (новости) ────────────────────────────────────
-function toggleHighlight() {
-  newsHighlightEnabled = !newsHighlightEnabled;
-  const btn = document.getElementById('hl-btn');
-  btn.classList.toggle('active', newsHighlightEnabled);
-  btn.textContent = `Жёлтая подсветка: ${newsHighlightEnabled ? 'вкл' : 'выкл'}`;
-  renderNews();
 }
 
 // ── AI (только для баннеров) ──────────────────────────────────────
@@ -790,7 +796,8 @@ document.getElementById('efir-date').addEventListener('change', renderEfir);
 document.getElementById('efir-time').addEventListener('change', renderEfir);
 document.getElementById('efir-day-custom').addEventListener('input', renderEfir);
 document.getElementById('news-title').addEventListener('input', renderNews);
-document.getElementById('news-subtitle').addEventListener('input', renderNews);
+document.getElementById('news-body').addEventListener('input', renderNews);
+document.getElementById('news-highlight').addEventListener('input', renderNews);
 
 buildSidebar('banner');
 render();
