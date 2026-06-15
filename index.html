@@ -405,15 +405,32 @@ async function render() {
   ctx.textBaseline = 'top';
   ctx.fillStyle = cfg.textColor;
 
-  let y = 80;
-  ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
-  for (const line of wrapText(ctx, title, 270)) { ctx.fillText(line, 32, y); y += 42; }
+  const TITLE_LINE_H = 42;
+  const SUB_LINE_H   = 24;
+  const GAP          = 14;
 
-  if (subtitle) {
-    y += 14;
+  // Считаем высоту всего блока — чтобы отцентрировать вертикально
+  ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
+  const titleLines = wrapText(ctx, title, 270);
+  ctx.font = '16px Arial, Helvetica, sans-serif';
+  const subLines   = subtitle ? wrapText(ctx, subtitle, 270) : [];
+
+  const titleH = titleLines.length * TITLE_LINE_H;
+  const subH   = subLines.length   ? GAP + subLines.length * SUB_LINE_H : 0;
+  const totalH = titleH + subH;
+
+  // Зона для текста: от 65px (ниже лого) до 310px (выше низа)
+  const AREA_TOP = 65, AREA_BOT = 310;
+  let y = Math.max(AREA_TOP, Math.round((AREA_TOP + AREA_BOT - totalH) / 2));
+
+  ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
+  for (const line of titleLines) { ctx.fillText(line, 32, y); y += TITLE_LINE_H; }
+
+  if (subLines.length) {
+    y += GAP;
     ctx.font = '16px Arial, Helvetica, sans-serif';
     ctx.globalAlpha = 0.9;
-    for (const line of wrapText(ctx, subtitle, 270)) { ctx.fillText(line, 32, y); y += 24; }
+    for (const line of subLines) { ctx.fillText(line, 32, y); y += SUB_LINE_H; }
     ctx.globalAlpha = 1;
   }
 }
