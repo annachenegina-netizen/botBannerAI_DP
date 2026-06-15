@@ -5,19 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Banner Generator — DobroPost</title>
 <style>
-  /* Шрифт эфира */
-  @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/Inter-Black-Latin.woff2') format('woff2');
-    font-weight: 900;
-    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-  }
-  @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/Inter-Black-Cyrillic.woff2') format('woff2');
-    font-weight: 900;
-    unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
-  }
+  /* Шрифт Inter загружается через FontFace API в JS */
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -350,6 +338,22 @@ let selectedTemplate = 'nahodki-1';
 let efirDay = 'Сегодня';
 let currentTab = 'banner';
 const imgCache = {};
+let interReady = false;
+
+async function loadInterFont() {
+  if (interReady) return;
+  try {
+    const [latin, cyr] = await Promise.all([
+      new FontFace('Inter', "url('/fonts/Inter-Black-Latin.woff2')",    { weight: '900', display: 'block' }).load(),
+      new FontFace('Inter', "url('/fonts/Inter-Black-Cyrillic.woff2')", { weight: '900', display: 'block' }).load(),
+    ]);
+    document.fonts.add(latin);
+    document.fonts.add(cyr);
+    interReady = true;
+  } catch (e) {
+    console.warn('Inter не загрузился:', e.message);
+  }
+}
 
 // ── Загрузка изображений ──────────────────────────────────────────
 function loadImg(src) {
@@ -448,12 +452,8 @@ async function renderEfir() {
     dateLabel = `${d} ${RU_MONTHS[m - 1]}, ${RU_DAYS[dt.getDay()]}`;
   }
 
-  // Ждём загрузки шрифта Inter (обе субранги)
-  await Promise.all([
-    document.fonts.load(`900 ${46 * S}px Inter`, 'А'),
-    document.fonts.load(`900 ${46 * S}px Inter`, 'A'),
-    document.fonts.load(`900 ${12 * S}px Inter`, 'А'),
-  ]).catch(() => {});
+  // Явно загружаем Inter Black (оба файла — латиница и кириллица)
+  await loadInterFont();
 
   const badgeTop  = (hasBg ? 75  : 55)  * S;
   const badgeLeft = 28 * S;
