@@ -439,15 +439,21 @@ async function renderEfir() {
     ? (document.getElementById('efir-day-custom').value || 'В эту пятницу')
     : efirDay;
 
-  // Дата в читаемый вид
+  // Дата в читаемый вид (с днём недели — как в воркфлоу)
+  const RU_DAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
   let dateLabel = '';
   if (dateVal) {
-    const [y, m, d] = dateVal.split('-').map(Number);
-    dateLabel = `${d} ${RU_MONTHS[m - 1]}`;
+    const [yr, m, d] = dateVal.split('-').map(Number);
+    const dt = new Date(yr, m - 1, d);
+    dateLabel = `${d} ${RU_MONTHS[m - 1]}, ${RU_DAYS[dt.getDay()]}`;
   }
 
-  // Ждём загрузки шрифта Inter
-  await document.fonts.load(`900 ${24 * S}px Inter`, 'А').catch(() => {});
+  // Ждём загрузки шрифта Inter (обе субранги)
+  await Promise.all([
+    document.fonts.load(`900 ${46 * S}px Inter`, 'А'),
+    document.fonts.load(`900 ${46 * S}px Inter`, 'A'),
+    document.fonts.load(`900 ${12 * S}px Inter`, 'А'),
+  ]).catch(() => {});
 
   const badgeTop  = (hasBg ? 75  : 55)  * S;
   const badgeLeft = 28 * S;
