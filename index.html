@@ -6,6 +6,8 @@
 <title>Banner Generator — DobroPost</title>
 <style>
   /* Шрифт Inter загружается через FontFace API в JS */
+  /* Баннер-канвас: 1200×700 в 600×350 CSS */
+  #preview { width: 600px; height: 350px; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -215,7 +217,7 @@
     <div class="banner-page" id="banner-page">
 
       <div class="canvas-wrap">
-        <canvas id="preview" width="600" height="350"></canvas>
+        <canvas id="preview" width="1200" height="700"></canvas>
       </div>
 
       <div class="fields">
@@ -382,55 +384,57 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ── Рендер баннера (600×350) ──────────────────────────────────────
+// ── Рендер баннера (2x: 1200×700, отображается 600×350) ──────────
 async function render() {
   const canvas = document.getElementById('preview');
   const ctx = canvas.getContext('2d');
-  const cfg = TEMPLATE_CONFIG[selectedTemplate];
-  const title = document.getElementById('title').value;
+  const S = 2; // масштаб 2x
+  const title    = document.getElementById('title').value;
   const subtitle = document.getElementById('subtitle').value;
 
-  ctx.clearRect(0, 0, 600, 350);
+  ctx.clearRect(0, 0, 1200, 700);
 
   try {
     const img = await loadImg('/templates/' + selectedTemplate + '.jpg');
-    ctx.drawImage(img, 0, 0, 600, 350);
+    ctx.drawImage(img, 0, 0, 1200, 700);
   } catch {
     ctx.fillStyle = '#E77E2F';
-    ctx.fillRect(0, 0, 600, 350);
+    ctx.fillRect(0, 0, 1200, 700);
   }
 
   if (!title && !subtitle) return;
 
   ctx.textBaseline = 'top';
-  ctx.fillStyle = cfg.textColor;
+  ctx.fillStyle = '#ffffff'; // всегда белый
 
-  const TITLE_LINE_H = 42;
-  const SUB_LINE_H   = 24;
-  const GAP          = 14;
+  const TITLE_LINE_H = 42 * S;
+  const SUB_LINE_H   = 24 * S;
+  const GAP          = 14 * S;
+  const LEFT         = 32 * S;
+  const MAX_W        = 270 * S;
 
-  // Считаем высоту всего блока — чтобы отцентрировать вертикально
-  ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
-  const titleLines = wrapText(ctx, title, 270);
-  ctx.font = '16px Arial, Helvetica, sans-serif';
-  const subLines   = subtitle ? wrapText(ctx, subtitle, 270) : [];
+  // Считаем высоту блока для вертикального центрирования
+  ctx.font = `bold ${36 * S}px Arial, Helvetica, sans-serif`;
+  const titleLines = wrapText(ctx, title, MAX_W);
+  ctx.font = `${16 * S}px Arial, Helvetica, sans-serif`;
+  const subLines   = subtitle ? wrapText(ctx, subtitle, MAX_W) : [];
 
   const titleH = titleLines.length * TITLE_LINE_H;
-  const subH   = subLines.length   ? GAP + subLines.length * SUB_LINE_H : 0;
+  const subH   = subLines.length ? GAP + subLines.length * SUB_LINE_H : 0;
   const totalH = titleH + subH;
 
-  // Зона для текста: от 65px (ниже лого) до 310px (выше низа)
-  const AREA_TOP = 65, AREA_BOT = 310;
+  // Зона: от 65px до 310px (в CSS px → ×S)
+  const AREA_TOP = 65 * S, AREA_BOT = 310 * S;
   let y = Math.max(AREA_TOP, Math.round((AREA_TOP + AREA_BOT - totalH) / 2));
 
-  ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
-  for (const line of titleLines) { ctx.fillText(line, 32, y); y += TITLE_LINE_H; }
+  ctx.font = `bold ${36 * S}px Arial, Helvetica, sans-serif`;
+  for (const line of titleLines) { ctx.fillText(line, LEFT, y); y += TITLE_LINE_H; }
 
   if (subLines.length) {
     y += GAP;
-    ctx.font = '16px Arial, Helvetica, sans-serif';
+    ctx.font = `${16 * S}px Arial, Helvetica, sans-serif`;
     ctx.globalAlpha = 0.9;
-    for (const line of subLines) { ctx.fillText(line, 32, y); y += SUB_LINE_H; }
+    for (const line of subLines) { ctx.fillText(line, LEFT, y); y += SUB_LINE_H; }
     ctx.globalAlpha = 1;
   }
 }
