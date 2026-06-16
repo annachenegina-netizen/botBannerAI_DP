@@ -381,15 +381,13 @@ const TEMPLATE_LABELS = {
 // align: 'top'    — прижать к верху зоны (лого справа/по центру, текст слева)
 //        'center' — центр зоны
 //        'upper'  — 20% от верха зоны (под лого, но не по центру)
+// areaTop = минимум Y (выше не рисовать — там лого или заголовок шаблона)
+// Позиция = центр всего баннера по вертикали, но не выше areaTop
 const NEWS_TEMPLATE_CONFIG = {
-  // Лого по центру (y≈65-240) → текст сразу под лого, на всю ширину, прижат вверх зоны
-  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 262, areaBot: 655, tSize: 54, bSize: 28, align: 'top'    },
-  // Чистая карточка — текст по центру карточки
-  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 65,  areaBot: 645, tSize: 54, bSize: 28, align: 'center' },
-  // "DobroPost" label сверху ~y=65-115 → текст ниже, по центру зоны
-  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 130, areaBot: 645, tSize: 54, bSize: 28, align: 'center' },
-  // Лого слева (y≈50-240) → текст сразу под лого, прижат вверх зоны
-  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 670, areaTop: 262, areaBot: 655, tSize: 54, bSize: 28, align: 'top'    },
+  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 250, tSize: 54, bSize: 28 },
+  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 65,  tSize: 54, bSize: 28 },
+  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 130, tSize: 54, bSize: 28 },
+  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 250, tSize: 54, bSize: 28 },
 };
 
 const RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -688,17 +686,8 @@ async function renderNews() {
   const totalH = titleLines.length * T_LINE
                + (bodyLines.length ? GAP + bodyLines.length * B_LINE : 0);
 
-  // Позиционирование по align-режиму шаблона
-  let y;
-  const zone = cfg.areaBot - cfg.areaTop;
-  if (cfg.align === 'top') {
-    y = cfg.areaTop;
-  } else if (cfg.align === 'upper') {
-    y = cfg.areaTop + Math.max(0, Math.round((zone - totalH) * 0.2));
-  } else {
-    // center
-    y = cfg.areaTop + Math.max(0, Math.round((zone - totalH) / 2));
-  }
+  // Центр всего баннера (714px), но не выше areaTop (зона под лого/заголовком шаблона)
+  let y = Math.max(cfg.areaTop, Math.round((714 - totalH) / 2));
 
   // Заголовок
   ctx.fillStyle = cfg.textColor;
