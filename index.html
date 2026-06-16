@@ -323,15 +323,12 @@
       <div class="news-fields">
         <div class="field-row">
           <div class="field-label">Заголовок</div>
-          <input type="text" id="news-title" placeholder="Например: ПВЗ Екатеринбург" maxlength="80">
+          <input type="text" id="news-title" placeholder="ПВЗ Екатеринбург" maxlength="80">
         </div>
         <div class="field-row">
           <div class="field-label">Текст</div>
-          <input type="text" id="news-body" placeholder="Дополнительный текст (опционально)" maxlength="120">
-        </div>
-        <div class="field-row">
-          <div class="field-label">Жёлтый текст <span style="color:#555;font-weight:400;text-transform:none;letter-spacing:0;">— конкретные слова с подсветкой</span></div>
-          <input type="text" id="news-highlight" placeholder="Например: Не работает и что теперь?" maxlength="100">
+          <input type="text" id="news-body" placeholder="[не работает] и что теперь?" maxlength="160">
+          <div style="font-size:11px;color:#4b5563;margin-top:4px;">Слова в [квадратных скобках] будут выделены жёлтым</div>
         </div>
       </div>
 
@@ -381,15 +378,15 @@ const TEMPLATE_LABELS = {
 
 // ── Конфиги шаблонов "Новости" ────────────────────────────────────
 // textX, maxW, areaTop, areaBot — в координатах 1280×714
-// news-white-center: логотип по центру сверху, левая полоса (x<490) чистая — текст туда
-// news-dark-1: белая карточка без заголовка — вся высота доступна
-// news-dark-2: "DobroPost" label ~y=65-110, текст ниже
-// news-white-left: логотип слева y=50-240, текст ниже
+// news-white-center: лого по центру y=65-240, НИЖЕ него идёт текст на всю ширину
+// news-dark-1: белая карточка без заголовка — вся высота
+// news-dark-2: "DobroPost" label ~y=65-115, текст ниже
+// news-white-left: логотип слева y=50-240, текст ниже на полную ширину
 const NEWS_TEMPLATE_CONFIG = {
-  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 460, areaTop: 70,  areaBot: 655 },
-  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 65,  areaBot: 645 },
-  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 135, areaBot: 645 },
-  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 258, areaBot: 655 },
+  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 660, areaTop: 260, areaBot: 655 },
+  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 65,  areaBot: 645 },
+  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 130, areaBot: 645 },
+  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 660, areaTop: 260, areaBot: 655 },
 };
 
 const RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -444,6 +441,73 @@ function wrapText(ctx, text, maxWidth) {
   }
   if (line) lines.push(line);
   return lines;
+}
+
+// ── Inline-подсветка: парсинг [слов в скобках] ───────────────────
+function parseInlineSegs(text) {
+  const segs = [];
+  const re = /\[([^\]]+)\]|([^\[]+)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[1] !== undefined) segs.push({ txt: m[1], hl: true });
+    else if (m[2])          segs.push({ txt: m[2], hl: false });
+  }
+  return segs;
+}
+
+// Токенизация сегментов в слова с замером ширины
+function tokenizeInline(ctx, segs) {
+  const tokens = [];
+  for (const seg of segs) {
+    for (const w of seg.txt.split(/\s+/).filter(Boolean))
+      tokens.push({ w, hl: seg.hl, tw: ctx.measureText(w).width });
+  }
+  return tokens;
+}
+
+// Перенос токенов по строкам
+function wrapTokens(tokens, maxW, spaceW) {
+  const lines = [];
+  let line = [], lw = 0;
+  for (const tok of tokens) {
+    const gap = line.length ? spaceW : 0;
+    if (line.length && lw + gap + tok.tw > maxW) {
+      lines.push(line); line = [tok]; lw = tok.tw;
+    } else {
+      line.push(tok); lw += gap + tok.tw;
+    }
+  }
+  if (line.length) lines.push(line);
+  return lines;
+}
+
+// Отрисовка одной строки с inline жёлтыми пилюлями
+function drawInlineLine(ctx, tokens, x, y, spaceW, fontSize, textColor) {
+  const PX = 8, PY = 5, R = 5;
+  let lx = x, i = 0;
+  while (i < tokens.length) {
+    if (i > 0) lx += spaceW;
+    if (tokens[i].hl) {
+      // Склеиваем идущие подряд выделенные слова в одну пилюлю
+      let txt = tokens[i].w, tw = tokens[i].tw, j = i + 1;
+      while (j < tokens.length && tokens[j].hl) {
+        txt += ' ' + tokens[j].w; tw += spaceW + tokens[j].tw; j++;
+      }
+      ctx.save();
+      ctx.fillStyle = '#FFC33A';
+      ctx.beginPath();
+      ctx.roundRect(lx - PX, y - PY, tw + PX * 2, fontSize + PY * 2, R);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#1C2B3A';
+      ctx.fillText(txt, lx, y);
+      lx += tw; i = j;
+    } else {
+      ctx.fillStyle = textColor;
+      ctx.fillText(tokens[i].w, lx, y);
+      lx += tokens[i].tw; i++;
+    }
+  }
 }
 
 // ── Рендер обычного баннера (2x: 1200×700 → CSS 600×350) ─────────
@@ -582,16 +646,15 @@ async function renderEfir() {
 }
 
 // ── Рендер новостей (1280×714 → CSS 640×357) ─────────────────────
+// Синтаксис текста: слова в [квадратных скобках] = жёлтая подсветка
 async function renderNews() {
-  const canvas    = document.getElementById('news-preview');
-  const ctx       = canvas.getContext('2d');
-  const title     = document.getElementById('news-title').value.trim();
-  const body      = document.getElementById('news-body').value.trim();
-  const highlight = document.getElementById('news-highlight').value.trim();
-  const cfg       = NEWS_TEMPLATE_CONFIG[selectedNewsTemplate];
+  const canvas = document.getElementById('news-preview');
+  const ctx    = canvas.getContext('2d');
+  const title  = document.getElementById('news-title').value.trim();
+  const body   = document.getElementById('news-body').value.trim();
+  const cfg    = NEWS_TEMPLATE_CONFIG[selectedNewsTemplate];
 
   ctx.clearRect(0, 0, 1280, 714);
-
   try {
     const img = await loadImg('/templates/' + selectedNewsTemplate + '.jpg');
     ctx.drawImage(img, 0, 0, 1280, 714);
@@ -599,67 +662,43 @@ async function renderNews() {
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, 1280, 714);
   }
+  if (!title && !body) return;
 
-  if (!title && !body && !highlight) return;
-
-  const TITLE_SIZE   = 54;
-  const BODY_SIZE    = 26;
-  const HL_SIZE      = 26;
-  const TITLE_LINE_H = 68;
-  const BODY_LINE_H  = 38;
-  const HL_PAD_X     = 12;
-  const HL_PAD_Y     = 6;
-  const HL_LINE_H    = HL_SIZE + HL_PAD_Y * 2 + 6; // высота пилюли + зазор
-  const GAP          = 14;
+  const T_SIZE  = 54; // размер заголовка
+  const B_SIZE  = 28; // размер текста
+  const T_LINE  = 68; // высота строки заголовка
+  const B_LINE  = 44; // высота строки текста (с учётом пилюль)
+  const GAP     = 18;
 
   ctx.textBaseline = 'top';
 
-  ctx.font = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
-  const titleLines = title     ? wrapText(ctx, title,     cfg.maxW) : [];
-  ctx.font = `${BODY_SIZE}px Arial, Helvetica, sans-serif`;
-  const bodyLines  = body      ? wrapText(ctx, body,      cfg.maxW) : [];
-  ctx.font = `600 ${HL_SIZE}px Arial, Helvetica, sans-serif`;
-  const hlLines    = highlight ? wrapText(ctx, highlight, cfg.maxW) : [];
+  // Заголовок — без разметки, просто перенос
+  ctx.font = `bold ${T_SIZE}px Arial, Helvetica, sans-serif`;
+  const titleLines = title ? wrapText(ctx, title, cfg.maxW) : [];
 
-  // Общая высота блока для вертикального центрирования
-  let totalH = titleLines.length * TITLE_LINE_H
-             + (bodyLines.length  ? GAP + bodyLines.length * BODY_LINE_H : 0)
-             + (hlLines.length    ? GAP + hlLines.length   * HL_LINE_H   : 0);
+  // Текст — с inline [выделением]
+  ctx.font = `${B_SIZE}px Arial, Helvetica, sans-serif`;
+  const spW        = ctx.measureText(' ').width;
+  const bodyTokens = body ? tokenizeInline(ctx, parseInlineSegs(body)) : [];
+  const bodyLines  = body ? wrapTokens(bodyTokens, cfg.maxW, spW) : [];
+
+  const totalH = titleLines.length * T_LINE
+               + (bodyLines.length ? GAP + bodyLines.length * B_LINE : 0);
 
   let y = Math.max(cfg.areaTop, Math.round((cfg.areaTop + cfg.areaBot - totalH) / 2));
 
   // Заголовок
-  if (titleLines.length) {
-    ctx.fillStyle = cfg.textColor;
-    ctx.font      = `bold ${TITLE_SIZE}px Arial, Helvetica, sans-serif`;
-    for (const line of titleLines) { ctx.fillText(line, cfg.textX, y); y += TITLE_LINE_H; }
-  }
+  ctx.fillStyle = cfg.textColor;
+  ctx.font      = `bold ${T_SIZE}px Arial, Helvetica, sans-serif`;
+  for (const line of titleLines) { ctx.fillText(line, cfg.textX, y); y += T_LINE; }
 
-  // Основной текст
+  // Текст с inline-подсветкой
   if (bodyLines.length) {
-    if (titleLines.length) y += GAP;
-    ctx.font = `${BODY_SIZE}px Arial, Helvetica, sans-serif`;
-    ctx.fillStyle   = cfg.textColor;
-    ctx.globalAlpha = 0.85;
-    for (const line of bodyLines) { ctx.fillText(line, cfg.textX, y); y += BODY_LINE_H; }
-    ctx.globalAlpha = 1;
-  }
-
-  // Жёлтый текст — каждая строка в жёлтой пилюле
-  if (hlLines.length) {
-    if (titleLines.length || bodyLines.length) y += GAP;
-    ctx.font = `600 ${HL_SIZE}px Arial, Helvetica, sans-serif`;
-    for (const line of hlLines) {
-      const tw = ctx.measureText(line).width;
-      ctx.save();
-      ctx.fillStyle = '#FFC33A';
-      ctx.beginPath();
-      ctx.roundRect(cfg.textX - HL_PAD_X, y - HL_PAD_Y, tw + HL_PAD_X * 2, HL_SIZE + HL_PAD_Y * 2, 6);
-      ctx.fill();
-      ctx.restore();
-      ctx.fillStyle = '#1C2B3A';
-      ctx.fillText(line, cfg.textX, y);
-      y += HL_LINE_H;
+    y += GAP;
+    ctx.font = `${B_SIZE}px Arial, Helvetica, sans-serif`;
+    for (const line of bodyLines) {
+      drawInlineLine(ctx, line, cfg.textX, y, spW, B_SIZE, cfg.textColor);
+      y += B_LINE;
     }
   }
 }
@@ -797,7 +836,6 @@ document.getElementById('efir-time').addEventListener('change', renderEfir);
 document.getElementById('efir-day-custom').addEventListener('input', renderEfir);
 document.getElementById('news-title').addEventListener('input', renderNews);
 document.getElementById('news-body').addEventListener('input', renderNews);
-document.getElementById('news-highlight').addEventListener('input', renderNews);
 
 buildSidebar('banner');
 render();
