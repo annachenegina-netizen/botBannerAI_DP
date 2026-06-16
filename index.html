@@ -377,16 +377,19 @@ const TEMPLATE_LABELS = {
 };
 
 // ── Конфиги шаблонов "Новости" ────────────────────────────────────
-// textX, maxW, areaTop, areaBot — в координатах 1280×714
-// news-white-center: лого по центру y=65-240, НИЖЕ него идёт текст на всю ширину
-// news-dark-1: белая карточка без заголовка — вся высота
-// news-dark-2: "DobroPost" label ~y=65-115, текст ниже
-// news-white-left: логотип слева y=50-240, текст ниже на полную ширину
+// Координаты в пространстве 1280×714.
+// align: 'top'    — прижать к верху зоны (лого справа/по центру, текст слева)
+//        'center' — центр зоны
+//        'upper'  — 20% от верха зоны (под лого, но не по центру)
 const NEWS_TEMPLATE_CONFIG = {
-  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 660, areaTop: 260, areaBot: 655 },
-  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 65,  areaBot: 645 },
-  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 130, areaBot: 645 },
-  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 660, areaTop: 260, areaBot: 655 },
+  // Лого по центру сверху (x≈390-900, y≈65-240). Левая полоса (x<390) чистая → текст туда, мельче шрифт
+  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 400, areaTop: 65,  areaBot: 650, tSize: 38, bSize: 22, align: 'top'    },
+  // Тёмная рамка, чистая белая карточка — текст по центру по всей высоте
+  'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 65,  areaBot: 645, tSize: 54, bSize: 28, align: 'center' },
+  // "DobroPost" label ~y=65-115 — текст ниже, по центру
+  'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 130, areaBot: 645, tSize: 54, bSize: 28, align: 'center' },
+  // Лого слева (x≈50-560, y≈50-240) — текст ниже лого, прижат чуть вверх
+  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 670, areaTop: 260, areaBot: 655, tSize: 54, bSize: 28, align: 'upper'  },
 };
 
 const RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -664,15 +667,15 @@ async function renderNews() {
   }
   if (!title && !body) return;
 
-  const T_SIZE  = 54; // размер заголовка
-  const B_SIZE  = 28; // размер текста
-  const T_LINE  = 68; // высота строки заголовка
-  const B_LINE  = 44; // высота строки текста (с учётом пилюль)
-  const GAP     = 18;
+  const T_SIZE = cfg.tSize;
+  const B_SIZE = cfg.bSize;
+  const T_LINE = T_SIZE + 14; // высота строки заголовка
+  const B_LINE = B_SIZE + 16; // высота строки текста (с запасом для пилюль)
+  const GAP    = 16;
 
   ctx.textBaseline = 'top';
 
-  // Заголовок — без разметки, просто перенос
+  // Заголовок — без разметки, перенос по словам
   ctx.font = `bold ${T_SIZE}px Arial, Helvetica, sans-serif`;
   const titleLines = title ? wrapText(ctx, title, cfg.maxW) : [];
 
@@ -685,7 +688,17 @@ async function renderNews() {
   const totalH = titleLines.length * T_LINE
                + (bodyLines.length ? GAP + bodyLines.length * B_LINE : 0);
 
-  let y = Math.max(cfg.areaTop, Math.round((cfg.areaTop + cfg.areaBot - totalH) / 2));
+  // Позиционирование по align-режиму шаблона
+  let y;
+  const zone = cfg.areaBot - cfg.areaTop;
+  if (cfg.align === 'top') {
+    y = cfg.areaTop;
+  } else if (cfg.align === 'upper') {
+    y = cfg.areaTop + Math.max(0, Math.round((zone - totalH) * 0.2));
+  } else {
+    // center
+    y = cfg.areaTop + Math.max(0, Math.round((zone - totalH) / 2));
+  }
 
   // Заголовок
   ctx.fillStyle = cfg.textColor;
