@@ -382,14 +382,14 @@ const TEMPLATE_LABELS = {
 //        'center' — центр зоны
 //        'upper'  — 20% от верха зоны (под лого, но не по центру)
 const NEWS_TEMPLATE_CONFIG = {
-  // Лого по центру сверху (x≈390-900, y≈65-240). Левая полоса (x<390) чистая → текст туда, мельче шрифт
-  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 400, areaTop: 65,  areaBot: 650, tSize: 38, bSize: 22, align: 'top'    },
-  // Тёмная рамка, чистая белая карточка — текст по центру по всей высоте
+  // Лого по центру (y≈65-240) → текст сразу под лого, на всю ширину, прижат вверх зоны
+  'news-white-center': { label: 'Белый — лого центр',  textColor: '#1C2B3A', textX: 50, maxW: 700, areaTop: 262, areaBot: 655, tSize: 54, bSize: 28, align: 'top'    },
+  // Чистая карточка — текст по центру карточки
   'news-dark-1':       { label: 'Тёмный — чистый',     textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 65,  areaBot: 645, tSize: 54, bSize: 28, align: 'center' },
-  // "DobroPost" label ~y=65-115 — текст ниже, по центру
+  // "DobroPost" label сверху ~y=65-115 → текст ниже, по центру зоны
   'news-dark-2':       { label: 'Тёмный — с подписью', textColor: '#1C2B3A', textX: 50, maxW: 680, areaTop: 130, areaBot: 645, tSize: 54, bSize: 28, align: 'center' },
-  // Лого слева (x≈50-560, y≈50-240) — текст ниже лого, прижат чуть вверх
-  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 670, areaTop: 260, areaBot: 655, tSize: 54, bSize: 28, align: 'upper'  },
+  // Лого слева (y≈50-240) → текст сразу под лого, прижат вверх зоны
+  'news-white-left':   { label: 'Белый — лого слева',  textColor: '#1C2B3A', textX: 50, maxW: 670, areaTop: 262, areaBot: 655, tSize: 54, bSize: 28, align: 'top'    },
 };
 
 const RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
