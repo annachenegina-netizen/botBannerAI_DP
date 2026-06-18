@@ -908,9 +908,11 @@ render();
     });
   }
 
+  // jivo_onOpen — глобальный колбэк Jivo при открытии чата
+  window.jivo_onOpen = onFirstMessage;
+
   window.jivo_onLoadCallback = function() {
-    console.log('[UTM] Jivo загрузился, вешаем обработчик');
-    window.jivo_api.onOpen = onFirstMessage;
+    console.log('[UTM] Jivo загрузился');
   };
 })();
 </script>
