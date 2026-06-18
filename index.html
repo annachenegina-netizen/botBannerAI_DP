@@ -908,8 +908,14 @@ render();
     });
   }
 
-  // jivo_onOpen — глобальный колбэк Jivo при открытии чата
-  window.jivo_onOpen = onFirstMessage;
+  // jivo_onContactInfo — срабатывает когда посетитель оставляет контакты
+  window.jivo_onContactInfo = function(contact_info) {
+    console.log('[UTM] посетитель оставил контакты:', contact_info);
+    utms.phone = contact_info.phone || '';
+    utms.name  = contact_info.name  || '';
+    utms.email = contact_info.email || '';
+    onFirstMessage();
+  };
 
   window.jivo_onLoadCallback = function() {
     console.log('[UTM] Jivo загрузился');
