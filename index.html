@@ -910,7 +910,7 @@ render();
 
   window.jivo_onLoadCallback = function() {
     console.log('[UTM] Jivo загрузился, вешаем обработчик');
-    window.jivo_api.onMessageSent = onFirstMessage;
+    window.jivo_api.onOpen = onFirstMessage;
   };
 })();
 </script>
