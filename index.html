@@ -873,5 +873,38 @@ document.getElementById('news-font').addEventListener('input', () => {
 buildSidebar('banner');
 render();
 </script>
+
+<!-- Jivo виджет -->
+<script src="//code.jivo.ru/widget/adiJr5pQ3W" async></script>
+
+<!-- UTM → Make.com при первом сообщении в чат -->
+<script>
+(function() {
+  var p = new URLSearchParams(window.location.search);
+  var utms = {
+    utm_source:   p.get('utm_source')   || '—',
+    utm_medium:   p.get('utm_medium')   || '—',
+    utm_campaign: p.get('utm_campaign') || '—',
+    utm_content:  p.get('utm_content')  || '—',
+    page_url:     window.location.href,
+    referrer:     document.referrer     || 'прямой заход'
+  };
+
+  var sent = false;
+  function onFirstMessage() {
+    if (sent) return;
+    sent = true;
+    fetch('https://hook.eu2.make.com/mkyb46rw52d6nk9b58gnhnu7265oicxw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(utms)
+    });
+  }
+
+  window.jivo_onLoadCallback = function() {
+    window.jivo_api.onMessageSent = onFirstMessage;
+  };
+})();
+</script>
 </body>
 </html>
