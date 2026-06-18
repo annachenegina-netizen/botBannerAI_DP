@@ -890,18 +890,26 @@ render();
     referrer:     document.referrer     || 'прямой заход'
   };
 
+  console.log('[UTM] скрипт загружен, данные:', utms);
+
   var sent = false;
   function onFirstMessage() {
     if (sent) return;
     sent = true;
+    console.log('[UTM] сообщение отправлено, шлём в Make.com');
     fetch('https://hook.eu2.make.com/mkyb46rw52d6nk9b58gnhnu7265oicxw', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(utms)
+    }).then(function(r) {
+      console.log('[UTM] Make.com ответил:', r.status);
+    }).catch(function(e) {
+      console.log('[UTM] ошибка fetch:', e);
     });
   }
 
   window.jivo_onLoadCallback = function() {
+    console.log('[UTM] Jivo загрузился, вешаем обработчик');
     window.jivo_api.onMessageSent = onFirstMessage;
   };
 })();
