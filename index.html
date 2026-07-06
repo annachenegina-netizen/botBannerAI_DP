@@ -246,6 +246,10 @@
           <div class="field-label">Размер заголовка: <span id="font-size-val">36</span>px</div>
           <input type="range" id="font-size" min="18" max="60" value="36" step="1">
         </div>
+        <div class="field-row">
+          <div class="field-label">Размер подзаголовка: <span id="sub-size-val">16</span>px</div>
+          <input type="range" id="sub-size" min="10" max="36" value="16" step="1">
+        </div>
       </div>
 
       <div class="ai-box">
@@ -349,6 +353,10 @@
         <div class="field-row">
           <div class="field-label">Размер заголовка: <span id="news-font-val">54</span></div>
           <input type="range" id="news-font" min="28" max="90" value="54" step="2">
+        </div>
+        <div class="field-row">
+          <div class="field-label">Размер текста: <span id="news-body-size-val">28</span></div>
+          <input type="range" id="news-body-size" min="14" max="60" value="28" step="2">
         </div>
       </div>
 
@@ -555,15 +563,16 @@ async function render() {
   ctx.textBaseline = 'top';
   ctx.fillStyle    = '#ffffff';
 
+  const subSize      = parseInt(document.getElementById('sub-size').value) || 16;
   const TITLE_LINE_H = (fontSize + 6) * S;
-  const SUB_LINE_H   = 24 * S;
+  const SUB_LINE_H   = (subSize + 8) * S;
   const GAP          = 14 * S;
   const LEFT         = parseInt(document.getElementById('banner-x').value) * S;
   const MAX_W        = 270 * S;
 
   ctx.font = `bold ${fontSize * S}px Arial, Helvetica, sans-serif`;
   const titleLines = wrapText(ctx, title, MAX_W);
-  ctx.font = `${16 * S}px Arial, Helvetica, sans-serif`;
+  ctx.font = `${subSize * S}px Arial, Helvetica, sans-serif`;
   const subLines   = subtitle ? wrapText(ctx, subtitle, MAX_W) : [];
 
   const titleH = titleLines.length * TITLE_LINE_H;
@@ -577,7 +586,7 @@ async function render() {
 
   if (subLines.length) {
     y += GAP;
-    ctx.font = `${16 * S}px Arial, Helvetica, sans-serif`;
+    ctx.font = `${subSize * S}px Arial, Helvetica, sans-serif`;
     ctx.globalAlpha = 0.9;
     for (const line of subLines) { ctx.fillText(line, LEFT, y); y += SUB_LINE_H; }
     ctx.globalAlpha = 1;
@@ -685,7 +694,7 @@ async function renderNews() {
   if (!title && !body) return;
 
   const T_SIZE = parseInt(document.getElementById('news-font').value);
-  const B_SIZE = Math.round(T_SIZE * 0.52);
+  const B_SIZE = parseInt(document.getElementById('news-body-size').value);
   const T_LINE = T_SIZE + 14;
   const B_LINE = B_SIZE + 16;
   const GAP    = 16;
@@ -852,6 +861,10 @@ document.getElementById('banner-y').addEventListener('input', () => {
   document.getElementById('banner-y-val').textContent = document.getElementById('banner-y').value;
   render();
 });
+document.getElementById('sub-size').addEventListener('input', () => {
+  document.getElementById('sub-size-val').textContent = document.getElementById('sub-size').value;
+  render();
+});
 document.getElementById('efir-date').addEventListener('change', renderEfir);
 document.getElementById('efir-time').addEventListener('change', renderEfir);
 document.getElementById('efir-day-custom').addEventListener('input', renderEfir);
@@ -867,6 +880,10 @@ document.getElementById('news-y').addEventListener('input', () => {
 });
 document.getElementById('news-font').addEventListener('input', () => {
   document.getElementById('news-font-val').textContent = document.getElementById('news-font').value;
+  renderNews();
+});
+document.getElementById('news-body-size').addEventListener('input', () => {
+  document.getElementById('news-body-size-val').textContent = document.getElementById('news-body-size').value;
   renderNews();
 });
 
