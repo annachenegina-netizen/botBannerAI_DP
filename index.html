@@ -293,6 +293,13 @@
           </div>
         </div>
 
+        <div class="field-row">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="efir-weekly" checked>
+            Еженедельный
+          </label>
+        </div>
+
         <div class="efir-row">
           <div class="field-row">
             <div class="field-label">Дата</div>
@@ -667,8 +674,15 @@ async function renderEfir() {
   ctx.textBaseline = 'top';
   ctx.font         = `900 ${fontSize}px Inter, 'Arial Black', Arial, sans-serif`;
 
-  let ty = textTop;
-  for (const line of ['Еженедельный', 'прямой эфир', `${dayLabel} в ${timeVal}`]) {
+  // Чекбокс "Еженедельный" — без него строка не нужна, остаётся просто
+  // "Прямой эфир" + день/время. Сдвигаем блок чуть ниже, чтобы 2 строки
+  // не висели у самого верха (там, где раньше было 3 строки).
+  const weekly = document.getElementById('efir-weekly').checked;
+  const headlineLines = weekly
+    ? ['Еженедельный', 'прямой эфир', `${dayLabel} в ${timeVal}`]
+    : ['Прямой эфир', `${dayLabel} в ${timeVal}`];
+  let ty = textTop + (weekly ? 0 : Math.round(fontSize * 1.18 * 0.5));
+  for (const line of headlineLines) {
     ctx.fillText(line, 28 * S, ty);
     ty += Math.round(fontSize * 1.18);
   }
@@ -868,6 +882,7 @@ document.getElementById('sub-size').addEventListener('input', () => {
 document.getElementById('efir-date').addEventListener('change', renderEfir);
 document.getElementById('efir-time').addEventListener('change', renderEfir);
 document.getElementById('efir-day-custom').addEventListener('input', renderEfir);
+document.getElementById('efir-weekly').addEventListener('change', renderEfir);
 document.getElementById('news-title').addEventListener('input', renderNews);
 document.getElementById('news-body').addEventListener('input', renderNews);
 document.getElementById('news-x').addEventListener('input', () => {
